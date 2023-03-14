@@ -1,0 +1,43 @@
+#!/bin/bash
+
+sam=03SU.fasta                                #your fasta file
+node='NODE_10793_length_1135_cov_2.906481'    #contig name to clean
+pos=971                                       #up or down cut-off position in the contig
+
+clean_end () {
+echo $node
+
+cat $sam | sed -n "/$node/,+96p" | sed '1b;/>/,$d' > pattern
+sed ':a;N;$!ba; s/\n//2g' pattern | sed -r "1b;s/(^.{$pos}).*/\1/" > change
+
+pattern2=$(cat pattern)
+change2=$(cat change)
+
+perl -i -p0e "s/$pattern2/$change2/s" $sam
+}
+
+clean_front () {
+echo $node
+#echo $pos
+
+cat $sam | sed -n "/$node/,+96p" | sed '1b;/>/,$d' > pattern
+sed ':a;N;$!ba; s/\n//2g' pattern | sed -r "1b;s/^.{$pos}//" > change
+
+pattern2=$(cat pattern)
+change2=$(cat change)
+
+perl -i -p0e "s/$pattern2/$change2/s" $sam
+}
+
+
+while read nodes pos
+do
+node="$nodes"
+declare -i pos
+        if [[ pos -gt 200 ]]    #number - mean position in the contig
+        then
+                clean_end
+        else
+                clean_front
+        fi
+done
